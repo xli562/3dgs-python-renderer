@@ -32,3 +32,6 @@ To get a local copy up and running, follow these simple steps.
 
 ### License
 Distributed under the MIT License. See LICENSE for more information.
+
+### Acknowledgements
+https://github.com/limacv/GaussianSplattingViewer/blob/main/util_gau.py
