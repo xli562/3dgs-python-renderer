@@ -1,1 +1,3 @@
-import utils.gaussian_utils
+from utils.gaussian_utils import *
+
+print(repr(naive_gaussians()))
