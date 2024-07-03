@@ -17,7 +17,7 @@ h, w = 720, 1080
 camera = Camera(h, w, position=(0.94, 1.29, -2.65), target=(0.0, 0.66, 0.07))
 # camera = Camera(h, w, position=(-0.57651054, 2.99040512, -0.03924271), target=(-0.0, 0.0, 0.0))
 
-bitmap = plot_model(camera, gaussian_objects)
+bitmap = gau_to_bitmap(camera, gaussian_objects)
 
 plt.figure(figsize=(12, 12))
 plt.imshow(bitmap, vmin=0, vmax=1.0)

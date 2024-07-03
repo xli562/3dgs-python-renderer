@@ -6,3 +6,4 @@ output
 *.ply
 sparse
 *pycache*
+*.vscode*
