@@ -6,8 +6,10 @@ def plot_conics_and_bbs(gaussian_objects, camera):
     objects as viewed by a camera.
 
     Calculatess the transformation from camera coordinates 
-    to screen coordinates. Draws each Gaussian's bounding box 
-    and 1-sigma ellipse based on the conic section.
+    to screen coordinates. Plots conics using equation 
+    A*x**2 + B*x*y + C*y**2 = 1, where A, B, C are the 
+    conic parameters. Plots the boundary where the 
+    equation is satisfied
 
     Parameters:
         gaussian_objects (list of Gaussian): The list of Gaussian objects to plot.

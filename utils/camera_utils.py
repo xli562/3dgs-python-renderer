@@ -1,6 +1,28 @@
+import numpy as np
+import glm
 
 class Camera:
+    """ Represents a camera in a 3D environment, which can 
+    compute transformations from world coords
+    to camera coords / projection screens.
+
+    Attributes:
+        h (int): Height of the camera's viewport.
+        w (int): Width of the camera's viewport.
+        position (np.ndarray): Cartesian coords of the camera.
+        target (np.ndarray): The target point the camera is looking at.
+        znear (float): Distance to the near clipping plane.
+        zfar (float): Distance to the far clipping plane.
+        fovy (float): Vertical field of view in radians.
+        up (np.ndarray): The up direction vector for the camera.
+        yaw (float): Yaw angle of camera.
+        pitch (float): Pitch angle of camera.
+    """
+
     def __init__(self, h, w, position=(0.0, 0.0, 3.0), target=(0.0, 0.0, 0.0)):
+        """ Initialise the camera with specific 
+        viewport dimensions and position attributes.
+        """
         self.znear = 0.01
         self.zfar = 100
         self.h = h
@@ -28,6 +50,12 @@ class Camera:
         self.roll_sensitivity = 0.03
 
     def _global_rot_mat(self):
+        """ Calculate the global rotation matrix of the camera
+        based on the its up-direction vector.
+
+        Returns:
+            np.ndarray: The rotation matrix.
+        """
         x = np.array([1, 0, 0])
         z = np.cross(x, self.up)
         z = z / np.linalg.norm(z)
@@ -35,6 +63,12 @@ class Camera:
         return np.stack([x, self.up, z], axis=-1)
 
     def get_view_matrix(self):
+        """ Compute the view matrix using the camera's position, 
+        target, and up vector.
+
+        Returns:
+            np.ndarray: The view matrix.
+        """
         return np.array(glm.lookAt(self.position, self.target, self.up))
 
     def get_projection_matrix(self):

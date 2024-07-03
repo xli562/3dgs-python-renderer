@@ -6,7 +6,25 @@ import glm
 import ctypes
 
 class Camera:
+    """
+    Represents a camera in a 3D environment with functionality to compute transformations
+    from world coordinates to camera coordinates, and to projection screens.
+
+    Attributes:
+        h (int): The height of the camera's viewport.
+        w (int): The width of the camera's viewport.
+        position (np.ndarray): The 3D position of the camera.
+        target (np.ndarray): The target point the camera is looking at.
+        znear (float): The near clipping plane distance.
+        zfar (float): The far clipping plane distance.
+        fovy (float): The vertical field of view in radians.
+        up (np.ndarray): The up direction for the camera.
+        yaw (float): The yaw angle of the camera.
+        pitch (float): The pitch angle of the camera.
+    """
+        
     def __init__(self, h, w, position=(0.0, 0.0, 3.0), target=(0.0, 0.0, 0.0)):
+        """Initialize the camera with specific viewport dimensions and position attributes."""
         self.znear = 0.01
         self.zfar = 100
         self.h = h
@@ -34,6 +52,12 @@ class Camera:
         self.roll_sensitivity = 0.03
 
     def _global_rot_mat(self):
+        """
+        Calculate the global rotation matrix based on the camera's up vector.
+
+        Returns:
+            np.ndarray: The rotation matrix.
+        """
         x = np.array([1, 0, 0])
         z = np.cross(x, self.up)
         z = z / np.linalg.norm(z)
@@ -41,9 +65,21 @@ class Camera:
         return np.stack([x, self.up, z], axis=-1)
 
     def get_view_matrix(self):
+        """
+        Compute the view matrix using the camera's position, target, and up vector.
+
+        Returns:
+            np.ndarray: The view matrix.
+        """
         return np.array(glm.lookAt(self.position, self.target, self.up))
 
     def get_projection_matrix(self):
+        """
+        Compute the projection matrix based on the camera's field of view and viewport dimensions.
+
+        Returns:
+            np.ndarray: The projection matrix.
+        """
         project_mat = glm.perspective(
             self.fovy,
             self.w / self.h,
@@ -53,20 +89,47 @@ class Camera:
         return np.array(project_mat).astype(np.float32)
 
     def get_htanfovxy_focal(self):
+        """
+        Calculate the horizontal and vertical tangents of the field of view and the focal length.
+
+        Returns:
+            list: [horizontal tangent, vertical tangent, focal length]
+        """
         htany = np.tan(self.fovy / 2)
         htanx = htany / self.h * self.w
         focal = self.h / (2 * htany)
         return [htanx, htany, focal]
 
     def get_focal(self):
+        """
+        Calculate the focal length based on the camera's field of view and viewport height.
+
+        Returns:
+            float: The focal length.
+        """
         return self.h / (2 * np.tan(self.fovy / 2))
 
     def get_htanfovxy(self):
+        """
+        Calculate the horizontal and vertical tangents of the field of view.
+
+        Returns:
+            list: [horizontal tangent, vertical tangent]
+        """
         htany = np.tan(self.fovy / 2)
         htanx = htany / self.h * self.w
         return [htanx, htany]
 
     def world_to_cam(self, points):
+        """
+        Transform points from world coordinates to camera coordinates.
+
+        Parameters:
+            points (np.ndarray): Points in world coordinates.
+
+        Returns:
+            np.ndarray: Points in camera coordinates.
+        """
         view_mat = self.get_view_matrix()
 
         # if points is 3xN, add a fourth row of ones
@@ -80,10 +143,28 @@ class Camera:
         return np.matmul(view_mat, points)
 
     def cam_to_world(self, points):
+        """
+        Transform points from camera coordinates to world coordinates.
+
+        Parameters:
+            points (np.ndarray): Points in camera coordinates.
+
+        Returns:
+            np.ndarray: Points in world coordinates.
+        """
         view_mat = self.get_view_matrix()
         return np.matmul(view_mat.T, points)
 
     def cam_to_ndc(self, points):
+        """
+        Transform points from camera coordinates to normalized device coordinates.
+
+        Parameters:
+            points (np.ndarray): Points in camera coordinates.
+
+        Returns:
+            np.ndarray: Points in normalized device coordinates.
+        """
         proj_mat = self.get_projection_matrix()
         points_ndc = proj_mat @ points
         if len(points_ndc.shape) == 1:
@@ -93,10 +174,30 @@ class Camera:
         return points_ndc
 
     def ndc_to_cam(self, points):
+        """
+        Transform points from normalized device coordinates to camera coordinates.
+
+        Parameters:
+            points (np.ndarray): Points in normalized device coordinates.
+
+        Returns:
+            np.ndarray: Points in camera coordinates.
+        """
         proj_mat = self.get_projection_matrix()
         return np.linalg.inv(proj_mat) @ points
 
     def ndc_to_pixel(self, points_ndc, screen_width=None, screen_height=None):
+        """
+        Convert points from normalized device coordinates to pixel coordinates.
+
+        Parameters:
+            points_ndc (np.ndarray): Points in normalized device coordinates.
+            screen_width (int, optional): The width of the screen. Defaults to camera width.
+            screen_height (int, optional): The height of the screen. Defaults to camera height.
+
+        Returns:
+            np.ndarray: Points in pixel coordinates.
+        """
         # Use camera plane size if screen size not specified
         if screen_width is None:
             screen_width = self.w
@@ -114,6 +215,13 @@ class Camera:
                 for point in points_ndc])
 
     def update_resolution(self, height, width):
+        """
+        Update the resolution of the camera's viewport.
+
+        Parameters:
+            height (int): New height of the viewport.
+            width (int): New width of the viewport.
+        """
         self.h = height
         self.w = width
         self.is_intrin_dirty = True
