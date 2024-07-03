@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.transform import Rotation
 from plyfile import PlyData
 from tqdm import tqdm
 from dataclasses import dataclass
@@ -52,7 +53,7 @@ class GaussianData:
 
 
 class Gaussian:
-    """ Represents a 3D Gaussian object. Properties: position, 
+    """ Represents a single 3D Gaussian. Properties: position, 
     scale, rotation, opacity, and spherical harmonics.
 
     Attributes:
@@ -65,6 +66,21 @@ class Gaussian:
     """
 
     scale_modifier = 1.0
+
+    SH_C0 = 0.28209479177387814
+    SH_C1 = 0.4886025119029199
+    SH_C2_0 = 1.0925484305920792
+    SH_C2_1 = -1.0925484305920792
+    SH_C2_2 = 0.31539156525252005
+    SH_C2_3 = -1.0925484305920792
+    SH_C2_4 = 0.5462742152960396
+    SH_C3_0 = -0.5900435899266435
+    SH_C3_1 = 2.890611442640554
+    SH_C3_2 = -0.4570457994644658
+    SH_C3_3 = 0.3731763325901154
+    SH_C3_4 = -0.4570457994644658
+    SH_C3_5 = 1.445305721320277
+    SH_C3_6 = -0.5900435899266435
 
     def __init__(self, pos, scale, rot, opacity, sh):
         """ Initializes the 3D Gaussian object with provided position, scale, rotation, opacity, and spherical harmonics coefficients.
@@ -79,17 +95,33 @@ class Gaussian:
         self.pos = np.array(pos)
         self.scale = np.array(self.scale_modifier * scale)
         # Initialize scipy Quaternion from rot (s, x, y, z)
-        self.rot = sp.spatial.transform.Rotation.from_quat([rot[1], rot[2], rot[3], rot[0]])
+        self.rot = Rotation.from_quat([rot[1], rot[2], rot[3], rot[0]])
         self.opacity = opacity[0]
         self.sh = np.array(sh)
         self.cov3D = self.compute_cov3d()
 
     def compute_cov3d(self):
+        """ Computes the covariance matrix in 3D based on 
+        the scale and rotation of the Gaussian.
+
+        Returns:
+            np.ndarray: The computed covariance matrix.
+        """
         cov3D = np.diag(self.scale**2)
         cov3D = self.rot.as_matrix().T @ cov3D @ self.rot.as_matrix()
         return cov3D
 
     def get_cov2d(self, camera):
+        """ Projects the 3D covariance matrix to a 2D covariance 
+        matrix using the camera's view matrix.
+
+        Parameters:
+            camera (Camera): The camera object to provide view matrix 
+            and other camera-specific parameters.
+
+        Returns:
+            np.ndarray: The 2D covariance matrix after projection.
+        """
         view_mat = camera.get_view_matrix()
         g_pos_w = np.append(self.pos, 1.0)
         # g_pos_cam = camera.world_to_cam(self.pos)
@@ -123,6 +155,15 @@ class Gaussian:
         return cov[:2, :2]
 
     def get_depth(self, camera):
+        """ Calculates the depth of the Gaussian's position 
+        relative to the camera.
+
+        Parameters:
+            camera (Camera): The camera object to provide the view matrix.
+
+        Returns:
+            float: Depth of the Gaussian in camera view space.
+        """
         view_matrix = camera.get_view_matrix()
         
         position4 = np.append(self.pos, 1.0)
@@ -131,6 +172,16 @@ class Gaussian:
         return depth
 
     def get_conic_and_bb(self, camera):
+        """ Computes the conic representation and 
+        bounding box of the Gaussian in normalized device coordinates.
+
+        Parameters:
+            camera (Camera): The camera object to provide the view matrix.
+
+        Returns:
+            tuple: (Conic representation, bounding box in camera space, 
+            bounding box in normalized device coordinates)
+        """
         cov2d = self.get_cov2d(camera)
 
         det = np.linalg.det(cov2d)
@@ -169,7 +220,7 @@ class Gaussian:
         return conic, bboxsize_cam, bbox_ndc
 
     def get_color(self, dir) -> np.ndarray:
-        """Samples spherical harmonics to get color for given view direction"""
+        """ Samples spherical harmonics to get color for given view direction """
         c0 = self.sh[0:3]   # f_dc_* from the ply file)
         color = SH_C0 * c0
 
