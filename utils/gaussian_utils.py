@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-from plyfile import PlyData
+from plyfile import PlyData, PlyElement
 from tqdm import tqdm
 from dataclasses import dataclass
 
@@ -324,7 +324,7 @@ def naive_gaussians():
     )
 
 
-def load_gau_from_ply(path):
+def load_gau_from_ply(path, num_samples:int=-1):
     """ Loads Gaussians from a .ply file. Assumes presence of 
     'x', 'y', 'z', 'rot', 'opacity', 'f_dc_0' to 'f_dc_2', 
     'f_rest_0' to 'f_rest_n', and 'scale_0' to 'scale_n'. 
@@ -333,6 +333,9 @@ def load_gau_from_ply(path):
 
     Parameters:
     path (str): The file path to the PLY file to be read.
+    num_samples (int) (optional): Number of sampled points.
+                Uses uniform sampling. Default is -1.
+                Takes all points if max_samples <= 0.
 
     Returns:
     A GaussianData instance containing all Gaussians from the file.
@@ -342,38 +345,49 @@ def load_gau_from_ply(path):
     match the expected count.
     """
     max_sh_degree = 3
-    plydata = PlyData.read(path)
-    xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
-                    np.asarray(plydata.elements[0]["y"]),
-                    np.asarray(plydata.elements[0]["z"])),  axis=1)
-    opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
+    ply_data = PlyData.read(path)
+
+    if num_samples > 0:
+        ply_data = ply_data['vertex'].data
+        total_points = len(ply_data)
+        step = total_points // num_samples
+        indices = np.arange(0, total_points, step)
+        indices = indices[:num_samples]
+        sampled_data = ply_data[indices]
+        sampled_element = PlyElement.describe(sampled_data, 'vertex')
+        ply_data = PlyData([sampled_element])
+
+    xyz = np.stack((np.asarray(ply_data.elements[0]["x"]),
+                    np.asarray(ply_data.elements[0]["y"]),
+                    np.asarray(ply_data.elements[0]["z"])),  axis=1)
+    opacities = np.asarray(ply_data.elements[0]["opacity"])[..., np.newaxis]
 
     features_dc = np.zeros((xyz.shape[0], 3, 1))
-    features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
-    features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
-    features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
+    features_dc[:, 0, 0] = np.asarray(ply_data.elements[0]["f_dc_0"])
+    features_dc[:, 1, 0] = np.asarray(ply_data.elements[0]["f_dc_1"])
+    features_dc[:, 2, 0] = np.asarray(ply_data.elements[0]["f_dc_2"])
 
-    extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_rest_")]
+    extra_f_names = [p.name for p in ply_data.elements[0].properties if p.name.startswith("f_rest_")]
     extra_f_names = sorted(extra_f_names, key = lambda x: int(x.split('_')[-1]))
     assert len(extra_f_names)==3 * (max_sh_degree + 1) ** 2 - 3
     features_extra = np.zeros((xyz.shape[0], len(extra_f_names)))
     for idx, attr_name in enumerate(extra_f_names):
-        features_extra[:, idx] = np.asarray(plydata.elements[0][attr_name])
+        features_extra[:, idx] = np.asarray(ply_data.elements[0][attr_name])
     # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
     features_extra = features_extra.reshape((features_extra.shape[0], 3, (max_sh_degree + 1) ** 2 - 1))
     features_extra = np.transpose(features_extra, [0, 2, 1])
 
-    scale_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("scale_")]
+    scale_names = [p.name for p in ply_data.elements[0].properties if p.name.startswith("scale_")]
     scale_names = sorted(scale_names, key = lambda x: int(x.split('_')[-1]))
     scales = np.zeros((xyz.shape[0], len(scale_names)))
     for idx, attr_name in enumerate(scale_names):
-        scales[:, idx] = np.asarray(plydata.elements[0][attr_name])
+        scales[:, idx] = np.asarray(ply_data.elements[0][attr_name])
 
-    rot_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("rot")]
+    rot_names = [p.name for p in ply_data.elements[0].properties if p.name.startswith("rot")]
     rot_names = sorted(rot_names, key = lambda x: int(x.split('_')[-1]))
     rots = np.zeros((xyz.shape[0], len(rot_names)))
     for idx, attr_name in enumerate(rot_names):
-        rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
+        rots[:, idx] = np.asarray(ply_data.elements[0][attr_name])
 
     # pass activate function
     xyz = xyz.astype(np.float32)
