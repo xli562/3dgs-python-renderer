@@ -183,7 +183,7 @@ class Gaussian:
 
     def get_conic_and_bb(self, camera):
         """ Computes the conic representation (i.e. projected ellipse) and 
-        bounding box of the Gaussian in normalized device coordinates.
+        bounding box of the Gaussian in camera coords and normalized device coords.
 
         Parameters:
             camera (Camera): The camera object to provide the view matrix.
@@ -201,11 +201,8 @@ class Gaussian:
         det_inv = 1.0 / det
         cov = [cov2d[0,0], cov2d[0,1], cov2d[1,1]]
         conic = np.array([cov[2] * det_inv, -cov[1] * det_inv, cov[0] * det_inv])
-        # cov_inv= np.linalg.inv(cov2d)
-        # conic = np.array([cov_inv[0,0], cov_inv[0,1], cov_inv[1,1]])
         # compute 3-sigma bounding box size
         bboxsize_cam = np.array([3.0 * np.sqrt(cov2d[0,0]), 3.0 * np.sqrt(cov2d[1,1])])
-        # bboxsize_cam = np.array([3.0 * np.sqrt(cov[0]), 3.0 * np.sqrt(cov[2])])        
         # Divide out camera plane size to get bounding box size in NDC
         wh = np.array([camera.w, camera.h])
         bboxsize_ndc = np.divide(bboxsize_cam, wh) * 2
@@ -328,7 +325,7 @@ def load_gau_from_ply(path, num_samples:int=-1):
     """ Loads Gaussians from a .ply file. Assumes presence of 
     'x', 'y', 'z', 'rot', 'opacity', 'f_dc_0' to 'f_dc_2', 
     'f_rest_0' to 'f_rest_n', and 'scale_0' to 'scale_n'. 
-    Reshapes and normalises certain features as part of the 
+    Reshapes and normalizes certain features as part of the 
     data preparation process.
 
     Parameters:
