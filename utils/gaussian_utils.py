@@ -51,6 +51,20 @@ class GaussianData:
     def sh_dim(self):
         return self.sh.shape[-1]
 
+SH_C0 = 0.28209479177387814
+SH_C1 = 0.4886025119029199
+SH_C2_0 = 1.0925484305920792
+SH_C2_1 = -1.0925484305920792
+SH_C2_2 = 0.31539156525252005
+SH_C2_3 = -1.0925484305920792
+SH_C2_4 = 0.5462742152960396
+SH_C3_0 = -0.5900435899266435
+SH_C3_1 = 2.890611442640554
+SH_C3_2 = -0.4570457994644658
+SH_C3_3 = 0.3731763325901154
+SH_C3_4 = -0.4570457994644658
+SH_C3_5 = 1.445305721320277
+SH_C3_6 = -0.5900435899266435
 
 class Gaussian:
     """ Represents a single 3D Gaussian. Properties: position, 
@@ -66,21 +80,6 @@ class Gaussian:
     """
 
     scale_modifier = 1.0
-
-    SH_C0 = 0.28209479177387814
-    SH_C1 = 0.4886025119029199
-    SH_C2_0 = 1.0925484305920792
-    SH_C2_1 = -1.0925484305920792
-    SH_C2_2 = 0.31539156525252005
-    SH_C2_3 = -1.0925484305920792
-    SH_C2_4 = 0.5462742152960396
-    SH_C3_0 = -0.5900435899266435
-    SH_C3_1 = 2.890611442640554
-    SH_C3_2 = -0.4570457994644658
-    SH_C3_3 = 0.3731763325901154
-    SH_C3_4 = -0.4570457994644658
-    SH_C3_5 = 1.445305721320277
-    SH_C3_6 = -0.5900435899266435
 
     def __init__(self, pos, scale, rot, opacity, sh):
         """ Initializes the 3D Gaussian object with provided position, scale, rotation, opacity, and spherical harmonics coefficients.
@@ -99,6 +98,17 @@ class Gaussian:
         self.opacity = opacity[0]
         self.sh = np.array(sh)
         self.cov3D = self.compute_cov3d()
+
+    def __str__(self):
+        return f'Gaussian centred at {self.pos}'
+    
+    def __repr__(self):
+        ret_str = 'class Gaussian with:\n'
+        ret_str += f'pos: {self.pos}\n'
+        ret_str += f'scale: {self.scale}\n'
+        ret_str += f'rotation: {self.rot.as_rotvec()}\n'    # Magnitude is rot angle, dirn is rot axis
+        ret_str += f'opacity: {self.opacity}\n'
+        return ret_str
 
     def compute_cov3d(self):
         """ Computes the covariance matrix in 3D based on 
@@ -172,7 +182,7 @@ class Gaussian:
         return depth
 
     def get_conic_and_bb(self, camera):
-        """ Computes the conic representation and 
+        """ Computes the conic representation (i.e. projected ellipse) and 
         bounding box of the Gaussian in normalized device coordinates.
 
         Parameters:
@@ -275,8 +285,6 @@ class Gaussian:
         return np.clip(color, 0.0, 1.0)
 
 
-
-
 def naive_gaussians():
     """ Generates 4 Gaussians, for use as debugging data """
     gau_xyz = np.array([
@@ -316,7 +324,7 @@ def naive_gaussians():
     )
 
 
-def load_ply(path):
+def load_gau_from_ply(path):
     """ Loads Gaussians from a .ply file. Assumes presence of 
     'x', 'y', 'z', 'rot', 'opacity', 'f_dc_0' to 'f_dc_2', 
     'f_rest_0' to 'f_rest_n', and 'scale_0' to 'scale_n'. 
