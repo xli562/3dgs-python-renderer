@@ -9,8 +9,8 @@ class Camera:
     Attributes:
         h (int): Height of the camera's viewport.
         w (int): Width of the camera's viewport.
-        position (np.ndarray): Cartesian coords of the camera.
-        target (np.ndarray): The target point the camera is looking at.
+        position (np.ndarray): Cartesian world coords of the camera.
+        target (np.ndarray): Cartesian world coords of the target of camera.
         znear (float): Distance to the near clipping plane.
         zfar (float): Distance to the far clipping plane.
         fovy (float): Vertical field of view in radians.
