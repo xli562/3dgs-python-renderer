@@ -85,7 +85,7 @@ class Gaussian:
         """ Initializes the 3D Gaussian object with provided position, scale, rotation, opacity, and spherical harmonics coefficients.
 
         Parameters:
-            pos (np.ndarray): 3D position vector.
+            pos (np.ndarray): 3D Cartesian position vector in world coordinates.
             scale (np.ndarray): Scaling factors along each axis.
             rot (np.ndarray): Quaternion rotation coefficients (s, x, y, z).
             opacity (np.ndarray): Opacity value.

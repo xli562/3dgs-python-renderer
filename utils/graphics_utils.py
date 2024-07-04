@@ -5,30 +5,31 @@ import matplotlib.pyplot as plt
 from utils.gaussian_utils import Gaussian
 from utils.camera_utils import Camera
 
-def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int, bitmap: np.ndarray, alphas: np.ndarray):
-    """ Computes and applies the opacity of a Gaussian object on a bitmap image given a camera's view.
+def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int, 
+                 bitmap: np.ndarray, alphas: np.ndarray):
+    """ Computes and applies the opacity of a Gaussian object on 
+    a bitmap image given a camera's view.
 
     Args:
         gaussian (Gaussian): The Gaussian object to plot.
         camera (Camera): The camera viewing the Gaussian.
         w (int): The width of the bitmap image.
         h (int): The height of the bitmap image.
-        bitmap (np.ndarray): The bitmap image on which to draw. Shape (w, h, 3). The 3 is rgb colour.
-        alphas (np.ndarray): Array containing alpha values for blending.
+        bitmap (np.ndarray): The bitmap image on which to draw. 
+                        Shape (w, h, 3). The 3 is rgb colour.
+        alphas (np.ndarray): 2D array containing alpha values for blending.
 
-    Modifies the bitmap image to include the rendered Gaussian based on its opacity and camera's view. Handles
-    blending of the Gaussian with the existing image content.
+    Modifies:
+        bitmap, alphas
     """
     conic, bboxsize_cam, bbox_ndc = gaussian.get_conic_and_bb(camera)
-    # print(bboxsize_cam)
-    # print(bbox_ndc)
 
     A, B, C = conic
 
     screen_height, screen_width = bitmap.shape[:2]
     bbox_screen = camera.ndc_to_pixel(bbox_ndc, screen_width, screen_height)
     
-    if np.any(np.isnan(bbox_screen)):
+    if np.any(np.isnan(bbox_screen)):   # Early exit if bitmap is corrupted
         return
 
     # 4 corners of the bounding box of 1 gaussian in screen coords
@@ -44,14 +45,14 @@ def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int, bitmap: np.
     nx = x2 - x1    # Number of pixls in the x direction
     ny = y2 - y1    # Number of pixls in the y direction
 
-    # Extract out inputs for the gaussian
-    coordxy = bboxsize_cam
+    # Extract out inputs for the gaussian in camera coords
+    coordxy = bboxsize_cam  # This line seems to be redundant. Replacing coordxy with bboxsize_cam makes no visible difference to a 1000 Gaussian rendering result.
     x_cam_1 = coordxy[0][0]   # ul
     x_cam_2 = coordxy[1][0]   # ur
     y_cam_1 = coordxy[1][1]   # ur (y)
     y_cam_2 = coordxy[2][1]   # lr
 
-    camera_dir = gaussian.pos - camera.position
+    camera_dir = gaussian.pos - camera.position     # vector pointing from cam. to gau.
     camera_dir = camera_dir / np.linalg.norm(camera_dir)
     color = gaussian.get_color(camera_dir)
 
@@ -62,15 +63,16 @@ def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int, bitmap: np.
             if y < 0 or y >= h:
                 continue
 
-            # 2D Gaussian is typically calculated as f(x, y) = A * exp(-(a*x^2 + 2*b*x*y + c*y^2))
+            # 2D Gaussian is typically calculated as 
+            # f(x, y) = A * exp(-(a*x^2 + 2*b*x*y + c*y^2))
             power = -(A*x_cam**2 + C*y_cam**2)/2.0 - B * x_cam * y_cam
-            if power > 0.0:
+            if power > 0.0:     # Not a Gaussian if power > 0.0
                 continue
 
-            alpha = gaussian.opacity * np.exp(power)
-            alpha = min(0.99, alpha)
             if gaussian.opacity < 1.0 / 255.0:
                 continue
+            alpha = gaussian.opacity * np.exp(power)
+            alpha = min(0.99, alpha)
 
             # Set the pixel color to the given color and opacity
             # Do alpha blending using "over" method
