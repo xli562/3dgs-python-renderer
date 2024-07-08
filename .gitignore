@@ -7,3 +7,4 @@ output
 sparse
 *pycache*
 *.vscode*
+*scratch*
