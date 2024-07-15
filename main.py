@@ -42,5 +42,5 @@ if __name__ == '__main__':
         bitmap_normalized = (bitmap * 255 / np.max(bitmap)).astype(np.uint8)
         img = Image.fromarray(bitmap_normalized)
         output_filename = datetime.now().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
-        img.save(f'./output/{output_filename}.jpg')
-        print(f'File saved as {output_filename}.jpg')
+        img.save(f'./output/{os.name}, {output_filename}.jpg')
+        print(f'File saved as {os.name}, {output_filename}.jpg')
