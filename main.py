@@ -4,7 +4,9 @@ from utils.graphics_utils import *
 from utils.camera_utils import *
 
 import os, argparse
+from datetime import datetime
 from tqdm import tqdm
+from PIL import Image
 import matplotlib.pyplot as plt
 
 ON_LINUX = os.name == 'posix'
@@ -13,8 +15,12 @@ PLY_PATH = r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='3D Gaussian Renderer')
     parser.add_argument('-i', type=int, required=False, default=1000, help='sample size from original point cloud, default=1000, complete sampling: -1')
+    parser.add_argument('--show', type=bool, required=False, default=False, help='show rendered image with matplotlib')
+    parser.add_argument('--store', type=bool, required=False, default=True, help='store rendered image with timestamp in ./output')
     args = parser.parse_args()
     sample_size = args.i
+    show_img = args.show
+    store_img = args.store
 
     print('Loading gaussians ...')
     model:GaussianData = load_gau_from_ply(PLY_PATH, sample_size)
@@ -28,6 +34,13 @@ if __name__ == '__main__':
 
     bitmap = gau_to_bitmap(camera, gaussian_objects)
 
-    plt.figure(figsize=(12, 12))
-    plt.imshow(bitmap, vmin=0, vmax=1.0)
-    plt.show()
+    if show_img:
+        plt.figure(figsize=(12, 12))
+        plt.imshow(bitmap, vmin=0, vmax=1.0)
+        plt.show()
+    if store_img:
+        bitmap_normalized = (bitmap * 255 / np.max(bitmap)).astype(np.uint8)
+        img = Image.fromarray(bitmap_normalized)
+        output_filename = datetime.now().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
+        img.save(f'./output/{output_filename}.jpg')
+        print(f'File saved as {output_filename}.jpg')

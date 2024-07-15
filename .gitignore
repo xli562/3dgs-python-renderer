@@ -2,7 +2,7 @@
 *.zip
 *.png
 *.splat
-output
+# output
 *.ply
 sparse
 *pycache*
