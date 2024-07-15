@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 ON_LINUX = os.name == 'posix'
 
 print(ON_LINUX)
-assert 0
 
 print('Loading gaussians ...')
 model:GaussianData = load_gau_from_ply(r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_cloud\iteration_7000\point_cloud.ply', 
