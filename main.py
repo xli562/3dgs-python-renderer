@@ -8,7 +8,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 ON_LINUX = os.name == 'posix'
-PLY_PATH = r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_cloud\iteration_7000\point_cloud.ply' if not ON_LINUX else '~/chair_point_cloud.ply'
+PLY_PATH = r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_cloud\iteration_7000\point_cloud.ply' if not ON_LINUX else '/home/xl562/chair_point_cloud.ply'
 
 print('Loading gaussians ...')
 model:GaussianData = load_gau_from_ply(PLY_PATH, -1)
