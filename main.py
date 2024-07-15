@@ -11,8 +11,7 @@ ON_LINUX = os.name == 'posix'
 PLY_PATH = r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_cloud\iteration_7000\point_cloud.ply' if not ON_LINUX else '~/chair_point_cloud.ply'
 
 print('Loading gaussians ...')
-model:GaussianData = load_gau_from_ply(r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_cloud\iteration_7000\point_cloud.ply', 
-                          -1)
+model:GaussianData = load_gau_from_ply(PLY_PATH, -1)
 gaussian_objects = []
 for (pos, scale, rot, opacity, sh) in tqdm(zip(model.xyz, model.scale, model.rot, model.opacity, model.sh), smoothing=0.6):
     gaussian_objects.append(Gaussian(pos, scale, rot, opacity, sh))
