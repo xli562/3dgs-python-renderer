@@ -100,9 +100,10 @@ def fast_plot_opacity(gaussian:Gaussian, camera:Camera, w:int, h:int,
     Modifies:
         bitmap
     """
-    # Currently only supports unclipped tiles, 
-    # therefore w and h need to be multiples of tile_size
-    if 
+    if (w % tile_size) or (h % tile_size):
+        print('''fast_plot_opacity() currently only supports unclipped tiles, 
+              therefore w and h need to be multiples of tile_size''')
+        raise
 
 
     conic, bboxsize_cam, bbox_ndc = gaussian.get_conic_and_bb(camera)
@@ -164,6 +165,8 @@ def fast_plot_opacity(gaussian:Gaussian, camera:Camera, w:int, h:int,
             alphas[y, x] = new_alpha
             bitmap[y, x, :] = (color[0:3]) * alpha + bitmap[y, x, :] * (1.0 - alpha)
 
+def cull_gaussian():
+    pass
 
 def gau_to_bitmap(camera, gaussian_objects:list):
     """ Sorts the Gaussian objects by depth from the perspective of the camera, 
