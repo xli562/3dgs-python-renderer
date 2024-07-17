@@ -182,8 +182,8 @@ class Camera:
         return np.linalg.inv(proj_mat) @ points
 
     def ndc_to_pixel(self, points_ndc, screen_width=None, screen_height=None):
-        """ Convert points from normalized device coordinates
-        to pixel coordinates.
+        """ Convert a list of 2D points from normalized device coordinates
+        to screen (aka pixel) coordinates.
 
         Parameters:
             points_ndc (np.ndarray): Points in normalized device coordinates.
@@ -193,7 +193,7 @@ class Camera:
                                         Defaults to camera height.
 
         Returns:
-            np.ndarray: Points in pixel coordinates.
+            np.ndarray: Points in screen coordinates.
         """
         # Use camera plane size if screen size not specified
         if screen_width is None:

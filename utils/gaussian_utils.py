@@ -1,3 +1,5 @@
+from utils.camera_utils import Camera
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 from plyfile import PlyData, PlyElement
@@ -181,7 +183,7 @@ class Gaussian:
         depth = g_pos_view[2]
         return depth
 
-    def get_conic_and_bb(self, camera):
+    def get_conic_and_bb(self, camera:Camera):
         """ Computes the conic representation (i.e. projected ellipse) and 
         bounding box of the Gaussian in camera coords and normalized device coords.
 
@@ -192,24 +194,28 @@ class Gaussian:
             tuple: (Conic representation, bounding box in camera space, 
             bounding box in normalized device coordinates)
         """
-        cov2d = self.get_cov2d(camera)
-
+        cov2d:np.ndarray = self.get_cov2d(camera)
         det = np.linalg.det(cov2d)
         if det == 0.0:
             return None
-        
         det_inv = 1.0 / det
         cov = [cov2d[0,0], cov2d[0,1], cov2d[1,1]]
         conic = np.array([cov[2] * det_inv, -cov[1] * det_inv, cov[0] * det_inv])
-        # compute 3-sigma bounding box size
+        # Compute axes-aligned 3-sigma bounding box size, eg [2.9, 11.3]
         bboxsize_cam = np.array([3.0 * np.sqrt(cov2d[0,0]), 3.0 * np.sqrt(cov2d[1,1])])
         # Divide out camera plane size to get bounding box size in NDC
-        wh = np.array([camera.w, camera.h])
-        bboxsize_ndc = np.divide(bboxsize_cam, wh) * 2
+        wh = np.array([camera.w, camera.h])     # eg [1080, 720]
+        bboxsize_ndc = np.divide(bboxsize_cam, wh) * 2      # eg [0.005, 0.031]
 
-        vertices = np.array([[-1, 1], [1, 1], [1, -1], [-1, -1]])
+        vertices = np.array([[ 1,  1], 
+                             [-1,  1], 
+                             [-1, -1], 
+                             [ 1, -1]])
         # Four coordxy values (used to evaluate gaussian, also in camera space coordinates)
-        bboxsize_cam = np.multiply(vertices, bboxsize_cam)
+        bboxsize_cam = np.multiply(vertices, bboxsize_cam)  # eg [[-2.9,  11.3]
+                                                            #     [ 2.9,  11.3]
+                                                            #     [ 2.9, -11.3]
+                                                            #     [-2.9, -11.3]]
 
         # compute g_pos_screen and gl_position
         view_matrix = camera.get_view_matrix()
@@ -220,11 +226,28 @@ class Gaussian:
         g_pos_screen = projection_matrix @ g_pos_view
         g_pos_screen = g_pos_screen / g_pos_screen[3]
         
-        bbox_ndc = np.multiply(vertices, bboxsize_ndc) + g_pos_screen[:2]
+        bbox_ndc = np.multiply(vertices, bboxsize_ndc)
+        bbox_ndc += g_pos_screen[:2]
         bbox_ndc = np.hstack((bbox_ndc, np.zeros((vertices.shape[0],2))))
         bbox_ndc[:,2:4] = g_pos_screen[2:4]
 
-        return conic, bboxsize_cam, bbox_ndc
+        # Compute oriented bounding box
+        k = 3       # Values of the Gaussian outside of the OBB is at most the 3-sigma value.
+        e_val, e_vect = np.linalg.eig(cov2d)
+        rot_rads = np.arctan2(e_vect[0][1], e_vect[1][1])
+        scaling_mat = np.array([[np.sqrt(e_val[0]), 0],
+                                [0, np.sqrt(e_val[1])]])
+        rot_mat = np.array([[np.cos(rot_rads), np.sin(rot_rads)],
+                            [np.sin(rot_rads), np.cos(rot_rads)]])
+        transform_mat = rot_mat @ scaling_mat / 10 / k
+        oob_cam = k * np.transpose(transform_mat @ vertices.T)
+        oob_cam = oob_cam * np.tile(e_val, (4,1))
+        oob_ndc = np.divide(oob_cam, np.tile(wh, (4,1))) * 2
+        oob_ndc = oob_ndc + g_pos_screen[:2]
+        oob_ndc = np.hstack((oob_ndc, np.zeros((vertices.shape[0],2))))
+        oob_ndc[:,2:4] = g_pos_screen[2:4]
+
+        return conic, bboxsize_cam, bbox_ndc, oob_ndc
 
     def get_color(self, dir) -> np.ndarray:
         """ Samples spherical harmonics to get color for given view direction """
