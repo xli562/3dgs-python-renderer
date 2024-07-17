@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 from utils.gaussian_utils import Gaussian
 from utils.camera_utils import Camera
 
+FAST_MODE = False
+print('NEWW')
 bboxes = []
-oobs = []
 
 def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int, 
                  bitmap: np.ndarray, alphas: np.ndarray):
@@ -26,22 +27,13 @@ def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int,
     Modifies:
         bitmap, alphas
     """
-    conic, bboxsize_cam, bbox_ndc, oob_ndc = gaussian.get_conic_and_bb(camera)
+    conic, bboxsize_cam, bbox_ndc = gaussian.get_conic_and_bb(camera)
 
     A, B, C = conic
 
     screen_height, screen_width = bitmap.shape[:2]
     bbox_screen = camera.ndc_to_pixel(bbox_ndc, screen_width, screen_height)
-    oob_screen = camera.ndc_to_pixel(oob_ndc, screen_width, screen_height)
-    # def printstr(lst):
-    #     retstr = 'polygon('
-    #     for i in lst:
-    #         retstr += f'({i[0]}, {i[1]}), '
-    #     retstr = retstr.rstrip(', ')
-    #     retstr += ')'
-    #     return retstr
     bboxes.append(np.floor(bbox_screen).astype(np.int32))
-    oobs.append(np.floor(oob_screen).astype(np.int32))
 
     if np.any(np.isnan(bbox_screen)):   # Early exit if bitmap is corrupted
         return
@@ -78,27 +70,30 @@ def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int,
             if y < 0 or y >= h:
                 continue
 
-            # 2D Gaussian is typically calculated as 
-            # f(x, y) = A * exp(-(a*x^2 + 2*b*x*y + c*y^2))
-            power = -(A*x_cam**2 + C*y_cam**2)/2.0 - B * x_cam * y_cam
-            if power > 0.0:     # Not a Gaussian if power > 0.0
-                continue
-
             if gaussian.opacity < 1.0 / 255.0:
                 continue
-            alpha = gaussian.opacity * np.exp(power)
-            alpha = min(0.99, alpha)
 
-            # Set the pixel color to the given color and opacity
-            # Do alpha blending using "over" method
-            old_alpha = alphas[y, x]
-            new_alpha = alpha + old_alpha * (1.0 - alpha)
-            alphas[y, x] = new_alpha
+            # 2D Gaussian is typically calculated as 
+            # f(x, y) = A * exp(-(a*x^2 + 2*b*x*y + c*y^2))
+            if not FAST_MODE:
+                power = -(A*x_cam**2 + C*y_cam**2)/2.0 - B * x_cam * y_cam
+                if power > 0.0:     # Not a Gaussian if power > 0.0
+                    continue
+                
+                alpha = gaussian.opacity * np.exp(power)
+                alpha = min(0.99, alpha)
+
+                # Set the pixel color to the given color and opacity
+                # Do alpha blending using "over" method
+                old_alpha = alphas[y, x]
+                new_alpha = alpha + old_alpha * (1.0 - alpha)
+                alphas[y, x] = new_alpha
+            else:
+                alpha = gaussian.opacity * 0.113
             bitmap[y, x, :] = (color[0:3]) * alpha + bitmap[y, x, :] * (1.0 - alpha)
 
 def draw_bboxes(idx, bitmap):
     cv2.polylines(bitmap, np.array([bboxes[idx]]), isClosed=True, color=(0,0,0))
-    cv2.polylines(bitmap, np.array([oobs[idx]]), isClosed=True, color=(255,0,0))
 
 def gau_to_bitmap(camera, gaussian_objects:list):
     """ Sorts the Gaussian objects by depth from the perspective of the camera, 
@@ -123,8 +118,8 @@ def gau_to_bitmap(camera, gaussian_objects:list):
     # for idx in indices:
         plot_opacity(gaussian_objects[idx], camera, camera.w, camera.h, bitmap, alphas)
     
-    for idx in tqdm(indices):
-        draw_bboxes(idx, bitmap)
+    # for idx in tqdm(indices):
+    #     draw_bboxes(idx, bitmap)
     
     return bitmap
 

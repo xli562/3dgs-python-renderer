@@ -14,7 +14,7 @@ PLY_PATH = r'D:\MyCodes\MyPythonCodes\3dgs\3dgs-acceleration\output\chair\point_
 
 if __name__ == '__main__':
     print('Loading gaussians ...')
-    model:GaussianData = load_gau_from_ply(PLY_PATH, 400)
+    model:GaussianData = load_gau_from_ply(PLY_PATH, 5000)
     gaussian_objects = []
     for (pos, scale, rot, opacity, sh) in zip(model.xyz, model.scale, model.rot, model.opacity, model.sh):
         gaussian_objects.append(Gaussian(pos, scale, rot, opacity, sh))

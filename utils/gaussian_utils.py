@@ -231,23 +231,7 @@ class Gaussian:
         bbox_ndc = np.hstack((bbox_ndc, np.zeros((vertices.shape[0],2))))
         bbox_ndc[:,2:4] = g_pos_screen[2:4]
 
-        # Compute oriented bounding box
-        k = 3       # Values of the Gaussian outside of the OBB is at most the 3-sigma value.
-        e_val, e_vect = np.linalg.eig(cov2d)
-        rot_rads = np.arctan2(e_vect[0][1], e_vect[1][1])
-        scaling_mat = np.array([[np.sqrt(e_val[0]), 0],
-                                [0, np.sqrt(e_val[1])]])
-        rot_mat = np.array([[np.cos(rot_rads), np.sin(rot_rads)],
-                            [np.sin(rot_rads), np.cos(rot_rads)]])
-        transform_mat = rot_mat @ scaling_mat / 10 / k
-        oob_cam = k * np.transpose(transform_mat @ vertices.T)
-        oob_cam = oob_cam * np.tile(e_val, (4,1))
-        oob_ndc = np.divide(oob_cam, np.tile(wh, (4,1))) * 2
-        oob_ndc = oob_ndc + g_pos_screen[:2]
-        oob_ndc = np.hstack((oob_ndc, np.zeros((vertices.shape[0],2))))
-        oob_ndc[:,2:4] = g_pos_screen[2:4]
-
-        return conic, bboxsize_cam, bbox_ndc, oob_ndc
+        return conic, bboxsize_cam, bbox_ndc
 
     def get_color(self, dir) -> np.ndarray:
         """ Samples spherical harmonics to get color for given view direction """
