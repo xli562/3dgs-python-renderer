@@ -58,7 +58,7 @@ def plot_opacity(gaussian: Gaussian, camera: Camera, w: int, h: int,
     y_cam_1 = coordxy[1][1]   # ur (y)
     y_cam_2 = coordxy[2][1]   # lr
 
-    camera_dir = gaussian.pos - camera.position     # vector pointing from cam. to gau.
+    camera_dir = gaussian.pos - camera.position     # 1x3 vector pointing from cam. to gau.
     camera_dir = camera_dir / np.linalg.norm(camera_dir)
     color = gaussian.get_color(camera_dir)
 

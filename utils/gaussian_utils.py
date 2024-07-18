@@ -235,10 +235,10 @@ class Gaussian:
 
     def get_color(self, dir) -> np.ndarray:
         """ Samples spherical harmonics to get color for given view direction """
-        c0 = self.sh[0:3]   # f_dc_* from the ply file)
+        c0 = self.sh[0:3]   # f_dc_* from the ply file
         color = SH_C0 * c0
 
-        shdim = len(self.sh)
+        shdim = len(self.sh)    # Always equals 48 for standard .ply files from the original code
 
         if shdim > 3:
             # Add the first order spherical harmonics
